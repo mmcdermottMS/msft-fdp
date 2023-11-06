@@ -1,0 +1,13 @@
+{
+    "scriptFile": "__init__.py",
+    "bindings": [
+        {
+            "type": "eventHubTrigger",
+            "direction": "in",
+            "name": "ingestion",
+            "eventHubName": "items",
+            "connection": "EHNS_CONN_STRING",
+            "cardinality": "many"
+        }
+    ]
+}
