@@ -5,7 +5,7 @@
             "type": "eventHubTrigger",
             "direction": "in",
             "name": "ingestion",
-            "eventHubName": "items-raw",
+            "eventHubName": "items",
             "connection": "EHNS_CONN_STRING",
             "cardinality": "many"
         }
