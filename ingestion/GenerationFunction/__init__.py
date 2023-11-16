@@ -45,7 +45,7 @@ def main(req: azure.functions.HttpRequest) -> azure.functions.HttpResponse:
 
         orders = []
         for x in range(message_count):
-            order_id = random.randint(1, message_count)
+            order_id = random.randint(1, 1000)
             item_count = random.randint(1, 100)
             order_items = []
             for y in range(item_count):
