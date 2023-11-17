@@ -11,6 +11,7 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 
 from SharedCode.Item import Item
+from SharedCode.Order import Order
 
 CONNECTION_STR = os.environ['EHNS_CONN_STRING']
 EVENTHUB_NAME = os.environ['TARGET_EH_NAME']
@@ -24,12 +25,13 @@ def main(ingestion: List[func.EventHubEvent]) -> None:
     tracer = trace.get_tracer(__name__)
 
     with tracer.start_as_current_span("ingest_items"):
-        logging.info(f"Ingested {len(ingestion) - 1} events.")
+        logging.info(f"Ingested {len(ingestion)} events.")
         
         items: List[Item] = []
-        for raw_item in ingestion:
-            item = json.loads(raw_item.get_body().decode('utf-8'), object_hook=lambda d: Item(**d))
-            items.append(item)
+        for raw_order in ingestion:
+            order = Order.model_validate_json(raw_order.get_body().decode('utf-8'))
+            for item in order.items:
+                items.append(item)
 
         publish(items)
         
@@ -48,6 +50,7 @@ def publish(items: List[Item]):
                 event_data_batch.add(EventData(str(item.model_dump())))
             except ValueError:
                 producer.send_batch(event_data_batch)
+                logging.info(F"Ingest: Published {len(event_data_batch)} items in a batch")
                 
                 event_data_batch = producer.create_batch(max_size_in_bytes=MAX_BATCH_SIZE_IN_BYTES, partition_key=str(partition_key))
                 
@@ -57,3 +60,4 @@ def publish(items: List[Item]):
                     logging.error("Message too large to fit into EventDataBatch object")
 
         producer.send_batch(event_data_batch)
+        logging.info(F"Ingest: Published {len(event_data_batch)} items to partition key {partition_key}")
