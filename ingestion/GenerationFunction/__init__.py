@@ -7,8 +7,10 @@ from typing import List
 import azure.functions
 from azure.eventhub import EventData
 from azure.eventhub import EventHubProducerClient
+
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
+configure_azure_monitor()
 
 from SharedCode.Item import Item
 from SharedCode.Order import Order
@@ -19,15 +21,16 @@ PARTITION_COUNT = int(os.environ['PARTITION_COUNT'])
 MAX_BATCH_SIZE_IN_BYTES = 1048576
 
 #https://learn.microsoft.com/en-us/azure/azure-monitor/app/opentelemetry-enable?tabs=python
-configure_azure_monitor(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'], service_name="GenerationFunction", instrumentation_key=os.environ['APPINSIGHTS_INSTRUMENTATIONKEY'])
+#configure_azure_monitor(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'], service_name="GenerationFunction", instrumentation_key=os.environ['APPINSIGHTS_INSTRUMENTATIONKEY'])
 
 producer = EventHubProducerClient.from_connection_string(conn_str=CONNECTION_STR, eventhub_name=EVENTHUB_NAME)
 
-def main(req: azure.functions.HttpRequest) -> azure.functions.HttpResponse:
-    # Get a tracer for the current module.
-    tracer = trace.get_tracer(__name__)
+#https://learn.microsoft.com/en-us/python/api/overview/azure/core-tracing-opentelemetry-readme?view=azure-python-preview#key-concepts
+tracer = trace.get_tracer(__name__)
+#exporter = AzureMonitorTraceExporter(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'])
+#trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(exporter))
 
-    # Start a new span with the name "hello". This also sets this created span as the current span in this context. This span will be exported to Azure Monitor as part of the trace.
+def main(req: azure.functions.HttpRequest) -> azure.functions.HttpResponse:
     with tracer.start_as_current_span("generate_items"):
         message_count_str = req.params.get('messageCount')
         if not message_count_str:
@@ -46,7 +49,8 @@ def main(req: azure.functions.HttpRequest) -> azure.functions.HttpResponse:
         orders = []
         for x in range(message_count):
             order_id = random.randint(1, 1000)
-            item_count = random.randint(1, 100)
+            #item_count = random.randint(1, 100)
+            item_count = 1
             order_items = []
             for y in range(item_count):
                 id = random.randint(1, 1000000)
@@ -70,7 +74,7 @@ def publish(orders: List[Order]):
             event_data_batch.add(EventData(str(order.model_dump())))
         except ValueError:
             producer.send_batch(event_data_batch)
-            logging.info(F"Generate: Published {len(event_data_batch)} orders in a batch")
+            logging.info(F"Generate: Published {len(event_data_batch)} orders in a batch. (Exception)")
             
             event_data_batch = producer.create_batch(max_size_in_bytes=MAX_BATCH_SIZE_IN_BYTES, partition_key=str(order.id))
             

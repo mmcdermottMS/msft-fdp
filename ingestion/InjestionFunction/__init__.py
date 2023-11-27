@@ -1,5 +1,4 @@
 from collections import defaultdict
-import json
 import logging
 import os
 from typing import List
@@ -7,8 +6,10 @@ from typing import List
 import azure.functions as func
 from azure.eventhub import EventData
 from azure.eventhub import EventHubProducerClient
+
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
+configure_azure_monitor()
 
 from SharedCode.Item import Item
 from SharedCode.Order import Order
@@ -18,22 +19,28 @@ EVENTHUB_NAME = os.environ['TARGET_EH_NAME']
 PARTITION_COUNT = int(os.environ['PARTITION_COUNT'])
 MAX_BATCH_SIZE_IN_BYTES = 1048576
 
-configure_azure_monitor(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'], service_name="GenerationFunction", instrumentation_key=os.environ['APPINSIGHTS_INSTRUMENTATIONKEY'])
 producer = EventHubProducerClient.from_connection_string(conn_str=CONNECTION_STR, eventhub_name=EVENTHUB_NAME)
 
+#trace.set_tracer_provider(TracerProvider())
+#tracer = trace.get_tracer(__name__)
+#exporter = AzureMonitorTraceExporter(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'])
+#trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(exporter))
+
 def main(ingestion: List[func.EventHubEvent]) -> None:
-    tracer = trace.get_tracer(__name__)
 
-    with tracer.start_as_current_span("ingest_items"):
-        logging.info(f"Ingested {len(ingestion)} events.")
-        
-        items: List[Item] = []
-        for raw_order in ingestion:
-            order = Order.model_validate_json(raw_order.get_body().decode('utf-8'))
-            for item in order.items:
-                items.append(item)
+    #tracer = trace.get_tracer(__name__)
 
-        publish(items)
+    #with tracer.start_as_current_span("ingest_items"):
+    logging.info(f"Ingested {len(ingestion)} events.")
+    
+    items: List[Item] = []
+    for raw_order in ingestion:
+        order = Order.model_validate_json(raw_order.get_body().decode('utf-8'))
+        logging.info(f"DistTrace: {raw_order.metadata['PropertiesArray']}")
+        for item in order.items:
+            items.append(item)
+
+    publish(items)
         
         
 def publish(items: List[Item]):
