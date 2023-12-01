@@ -9,6 +9,12 @@ from azure.eventhub import EventHubProducerClient
 
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
+from opentelemetry.propagate import extract
+
+#root_logger = logging.getLogger()
+#for handler in root_logger.handlers[:]:
+#    root_logger.removeHandler(handler)
+
 configure_azure_monitor()
 
 from SharedCode.Item import Item
@@ -21,26 +27,23 @@ MAX_BATCH_SIZE_IN_BYTES = 1048576
 
 producer = EventHubProducerClient.from_connection_string(conn_str=CONNECTION_STR, eventhub_name=EVENTHUB_NAME)
 
-#trace.set_tracer_provider(TracerProvider())
-#tracer = trace.get_tracer(__name__)
-#exporter = AzureMonitorTraceExporter(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'])
-#trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(exporter))
-
-def main(ingestion: List[func.EventHubEvent]) -> None:
-
-    #tracer = trace.get_tracer(__name__)
-
-    #with tracer.start_as_current_span("ingest_items"):
-    logging.info(f"Ingested {len(ingestion)} events.")
+def main(ingestion: List[func.EventHubEvent], context) -> None:
+    #https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/monitor/azure-monitor-opentelemetry#monitoring-in-azure-functions
+    carrier = {
+        "traceparent": context.trace_context.Traceparent,
+        "tracestate": context.trace_context.Tracestate,
+    }
     
-    items: List[Item] = []
-    for raw_order in ingestion:
-        order = Order.model_validate_json(raw_order.get_body().decode('utf-8'))
-        logging.info(f"DistTrace: {raw_order.metadata['PropertiesArray']}")
-        for item in order.items:
-            items.append(item)
+    tracer = trace.get_tracer(__name__)
+    with tracer.start_as_current_span("ingest_items", context=extract(carrier)):
+        logging.info(f"Ingested {len(ingestion)} events.")
+        items: List[Item] = []
+        for raw_order in ingestion:
+            order = Order.model_validate_json(raw_order.get_body().decode('utf-8'))
+            for item in order.items:
+                items.append(item)
 
-    publish(items)
+        publish(items)
         
         
 def publish(items: List[Item]):

@@ -10,6 +10,7 @@ from azure.eventhub import EventHubProducerClient
 
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
+from opentelemetry.propagate import extract
 configure_azure_monitor()
 
 from SharedCode.Item import Item
@@ -20,18 +21,16 @@ EVENTHUB_NAME = os.environ['SOURCE_EH_NAME']
 PARTITION_COUNT = int(os.environ['PARTITION_COUNT'])
 MAX_BATCH_SIZE_IN_BYTES = 1048576
 
-#https://learn.microsoft.com/en-us/azure/azure-monitor/app/opentelemetry-enable?tabs=python
-#configure_azure_monitor(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'], service_name="GenerationFunction", instrumentation_key=os.environ['APPINSIGHTS_INSTRUMENTATIONKEY'])
-
 producer = EventHubProducerClient.from_connection_string(conn_str=CONNECTION_STR, eventhub_name=EVENTHUB_NAME)
 
-#https://learn.microsoft.com/en-us/python/api/overview/azure/core-tracing-opentelemetry-readme?view=azure-python-preview#key-concepts
-tracer = trace.get_tracer(__name__)
-#exporter = AzureMonitorTraceExporter(connection_string=os.environ['APPLICATIONINSIGHTS_CONNECTION_STRING'])
-#trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(exporter))
-
-def main(req: azure.functions.HttpRequest) -> azure.functions.HttpResponse:
-    with tracer.start_as_current_span("generate_items"):
+def main(req: azure.functions.HttpRequest, context) -> azure.functions.HttpResponse:
+    carrier = {
+      "traceparent": context.trace_context.Traceparent,
+      "tracestate": context.trace_context.Tracestate,
+    }
+    
+    tracer = trace.get_tracer(__name__)
+    with tracer.start_as_current_span("generate_items", context=extract(carrier)):
         message_count_str = req.params.get('messageCount')
         if not message_count_str:
             try:
@@ -62,7 +61,7 @@ def main(req: azure.functions.HttpRequest) -> azure.functions.HttpResponse:
         
         publish(orders)
         
-        return azure.functions.HttpResponse(f"{message_count_str} events sent to Event Hub.", status_code=200)
+        return azure.functions.HttpResponse(f"Generate: {message_count_str} events sent to Event Hub.", status_code=200)
     
     
 def publish(orders: List[Order]):
