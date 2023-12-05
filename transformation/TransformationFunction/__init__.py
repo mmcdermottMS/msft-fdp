@@ -12,13 +12,11 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 from opentelemetry.propagate import extract
 
-#root_logger = logging.getLogger()
-#for handler in root_logger.handlers[:]:
-#    root_logger.removeHandler(handler)
+root_logger = logging.getLogger()
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
 
 configure_azure_monitor()
-
-
 
 url = os.environ["COSMOS_URI"]
 key = os.environ["COSMOS_KEY"]

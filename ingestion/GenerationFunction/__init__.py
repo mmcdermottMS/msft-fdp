@@ -11,12 +11,17 @@ from azure.eventhub import EventHubProducerClient
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 from opentelemetry.propagate import extract
+
+root_logger = logging.getLogger()
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
+    
 configure_azure_monitor()
 
 from SharedCode.Item import Item
 from SharedCode.Order import Order
 
-CONNECTION_STR = os.environ['EHNS_CONN_STRING']
+CONNECTION_STR = os.environ['EHNS_CONN_STRING_DESP']
 EVENTHUB_NAME = os.environ['SOURCE_EH_NAME']
 PARTITION_COUNT = int(os.environ['PARTITION_COUNT'])
 MAX_BATCH_SIZE_IN_BYTES = 1048576
