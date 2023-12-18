@@ -1,4 +1,3 @@
-from collections import defaultdict
 import logging
 import os
 import random
@@ -12,17 +11,13 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 from opentelemetry.propagate import extract
 
-root_logger = logging.getLogger()
-for handler in root_logger.handlers[:]:
-    root_logger.removeHandler(handler)
-    
-configure_azure_monitor()
-
 from SharedCode.Item import Item
 from SharedCode.Order import Order
 
-CONNECTION_STR = os.environ['EHNS_CONN_STRING_DESP']
-EVENTHUB_NAME = os.environ['SOURCE_EH_NAME']
+configure_azure_monitor()
+
+CONNECTION_STR = os.environ['EHNS_CONN_STRING']
+EVENTHUB_NAME = os.environ['EH_NAME']
 PARTITION_COUNT = int(os.environ['PARTITION_COUNT'])
 MAX_BATCH_SIZE_IN_BYTES = 1048576
 
@@ -66,9 +61,9 @@ def main(req: azure.functions.HttpRequest, context) -> azure.functions.HttpRespo
         
         publish(orders)
         
-        return azure.functions.HttpResponse(f"Generate: {message_count_str} events sent to Event Hub.", status_code=200)
-    
-    
+        return azure.functions.HttpResponse(f"FDP - Generate: {message_count_str} events sent to Event Hub.", status_code=200)
+
+
 def publish(orders: List[Order]):
 
     for order in orders:        
@@ -78,16 +73,14 @@ def publish(orders: List[Order]):
             event_data_batch.add(EventData(str(order.model_dump())))
         except ValueError:
             producer.send_batch(event_data_batch)
-            logging.info(F"Generate: Published {len(event_data_batch)} orders in a batch. (Exception)")
+            logging.info(F"FDP - Generate: Published {len(event_data_batch)} orders in a batch. (Exception)")
             
             event_data_batch = producer.create_batch(max_size_in_bytes=MAX_BATCH_SIZE_IN_BYTES, partition_key=str(order.id))
             
             try:
                 event_data_batch.add(EventData(str(order.model_dump())))
             except ValueError:
-                logging.error("Message too large to fit into EventDataBatch object")
+                logging.error("FDP - Generate: Message too large to fit into EventDataBatch object")
 
         producer.send_batch(event_data_batch)
-        logging.info(F"Generate: Published {len(event_data_batch)} orders in a batch")
-        
-    
+        logging.info(F"FDP - Generate: Published {len(event_data_batch)} orders in a batch")
