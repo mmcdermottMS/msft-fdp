@@ -1,0 +1,15 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+      "AzureWebJobsStorage": "Your Azure StorageConnString Here",
+      "FUNCTIONS_WORKER_RUNTIME": "python",
+      "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+      "EHNS_CONN_STRING_TARGET": "Your Target Event Hub Namespace Conn String Here",
+      "EHNS_CONN_STRING_SOURCE": "Your Source Event Hub Namespace Conn String Here",
+      "SOURCE_EH_NAME": "items-raw",
+      "TARGET_EH_NAME": "items",
+      "PARTITION_COUNT": 32,
+      "APPLICATIONINSIGHTS_CONNECTION_STRING": "Your App Insights Conn String Here",
+      "APPINSIGHTS_INSTRUMENTATIONKEY": "Your App Insights Instrumentation Key Here"
+    }
+  }

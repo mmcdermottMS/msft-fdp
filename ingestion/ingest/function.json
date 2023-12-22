@@ -6,7 +6,7 @@
             "direction": "in",
             "name": "ingestion",
             "eventHubName": "items-raw",
-            "connection": "EHNS_CONN_STRING",
+            "connection": "EHNS_CONN_STRING_SOURCE",
             "cardinality": "many"
         }
     ]

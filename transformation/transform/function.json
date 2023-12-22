@@ -4,7 +4,7 @@
         {
             "type": "eventHubTrigger",
             "direction": "in",
-            "name": "ingestion",
+            "name": "transformation",
             "eventHubName": "items",
             "connection": "EHNS_CONN_STRING",
             "cardinality": "many"
