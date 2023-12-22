@@ -13,7 +13,7 @@
   },
   "extensions": {
     "eventHubs": {
-      "maxEventBatchSize": 1,
+      "maxEventBatchSize": 10,
       "targetUnprocessedEventThreshold": 1,
       "batchCheckpointFrequency": 1
     }

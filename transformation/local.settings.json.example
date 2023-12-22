@@ -1,0 +1,15 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "Your Azure StorageConnString Here",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+    "EHNS_CONN_STRING": "Your Event Hub Namespace Conn String Here",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": "Your App Insights Conn String Here",
+    "APPINSIGHTS_INSTRUMENTATIONKEY": "Your App Insights Instrumentation Key Here",
+    "COSMOS_DATABASE_NAME": "Your Cosmos Database Name Here",
+    "COSMOS_CONTAINER_NAME": "items",
+    "COSMOS_URI": "https:/{Cosmos Account Name}.documents.azure.com:443/",
+    "COSMOS_KEY": "Your Cosmos Key Here"
+  }
+}
