@@ -10,6 +10,7 @@ from azure.eventhub import EventHubProducerClient
 #Import the Azure Open Telemetry and native Open Telemetry modules
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
+from opentelemetry import metrics
 from opentelemetry.propagate import extract
 
 from SharedCode.Item import Item
@@ -25,6 +26,17 @@ from SharedCode.Order import Order
 #executes this line.  If this line runs more than once, you will see duplicate dependency records in
 #Application Insights, one for every instance that this line was called
 configure_azure_monitor()
+
+
+#For capturing custom metrics, first define a global meter object:
+meter = metrics.get_meter_provider().get_meter("ingestion_meter")
+#Next create one or more instruments to capture the metrics you want to track.  In this case, we're tracking the number of items ingested
+itemCounter = meter.create_counter(name="order_item_counter", description="Item Counter", unit="1")
+#We can also create a second instrument to track the number of orders
+orderCounter = meter.create_counter(name="order_counter", description="Order Counter", unit="1")
+#These instruments should be created once and only once, and then used throughout the function to capture the metrics, they can be
+#global variables and passed around as needed
+
 
 CONNECTION_STR = os.environ['EHNS_CONN_STRING_TARGET']
 EVENTHUB_NAME = os.environ['TARGET_EH_NAME']
@@ -48,8 +60,10 @@ def main(ingestion: List[func.EventHubEvent], context) -> None:
         logging.info(f"Ingest: Ingested {len(ingestion)} events.")
         items: List[Item] = []
         for raw_order in ingestion:
+            orderCounter.add(1) #Increment the order counter by 1 for each order ingested
             order = Order.model_validate_json(raw_order.get_body().decode('utf-8'))
             for item in order.items:
+                itemCounter.add(1) #Increment the item counter by 1 for each item in the order
                 items.append(item)
 
         publish(items)        
