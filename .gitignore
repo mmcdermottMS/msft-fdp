@@ -164,3 +164,4 @@ __blobstorage*
 local.settings.json
 ingestion/local.settings.json
 transformation/local.settings.json
+.vscode
